@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "881046646952",
+    "project_id": "onlinebuyingdb",
+    "storage_bucket": "onlinebuyingdb.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:881046646952:android:7ccfd8b883b7b241c2529d",
+        "android_client_info": {
+          "package_name": "com.example.onlinebuying"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "881046646952-3dic93ros8ev2234gvcpv84ue90c15ap.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDau3ZMbD6JKePdjzIiMOJd5XDt8v-0ag4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "881046646952-3dic93ros8ev2234gvcpv84ue90c15ap.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
