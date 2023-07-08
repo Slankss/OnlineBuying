@@ -24,7 +24,7 @@ class StoreData(private val context : Context) {
 
     val getData : Flow<Boolean?> = context.dataStore.data
         .map{ preferences ->
-            preferences[FIRST_TIME] ?: false
+            preferences[FIRST_TIME] ?: true
         }
 
     suspend fun saveData(first_time : Boolean){

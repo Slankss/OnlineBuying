@@ -39,6 +39,7 @@ class FirstPageViewModel(
         viewModelScope.launch {
             storedData.getData.collect{
                 first_time = it
+                Log.w("errorumsu",it.toString())
                 nextPage()
             }
         }
@@ -56,8 +57,8 @@ class FirstPageViewModel(
         else{
             when(first_time)
             {
-                true -> _page.value = Pages.TrailerPage.name
-                else -> _page.value = Pages.LoginPage.name
+                false -> _page.value = Pages.LoginPage.name
+                else -> _page.value = Pages.TrailerPage.name
             }
         }
     }

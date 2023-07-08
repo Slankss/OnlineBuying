@@ -56,8 +56,7 @@ fun TrailerPage(
 
     val storeData = StoreData(context)
 
-    LaunchedEffect(key1 = true, block = {
-    })
+
 
     Column(
         modifier = Modifier
