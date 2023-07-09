@@ -1,6 +1,7 @@
 package com.example.onlinebuying.Repository
 
 import android.util.Log
+import com.example.onlinebuying.Model.ProcessOf
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.coroutineScope
@@ -20,37 +21,40 @@ class FirebaseRepository() {
     }
 
     fun register(email : String,password: String,
-            successListener : () -> Unit,
-            failureListener : (String) -> Unit
+            resultListener: (ProcessOf<Int>) -> Unit
                  ){
 
         auth.createUserWithEmailAndPassword(email,password).addOnCompleteListener{ task ->
             if(task.isSuccessful){
-                successListener()
+                resultListener(ProcessOf.Success)
             }
         }.addOnFailureListener{ exception ->
-            failureListener(exception.localizedMessage)
-        }
-
-    }
-
-    suspend fun login(email : String,password: String,
-            resultListener: () -> Unit,
-              )
-    {
-        var result = coroutineScope{
-            launch {
-                auth.signInWithEmailAndPassword(email,password).addOnCompleteListener{ task ->
-                    if(task.isSuccessful){
-                        resultListener()
-                    }
-                }.addOnFailureListener{ exception ->
-                    // failureListener(exception.localizedMessage)
-
-                }
+            exception.localizedMessage?.let{
+                resultListener(ProcessOf.Error(it))
             }
+
         }
 
     }
+
+    fun login(email : String,password: String,
+            resultListener: (ProcessOf<Int>) -> Unit,
+        )
+    {
+        auth.signInWithEmailAndPassword(email, password).addOnCompleteListener { task ->
+            if (task.isSuccessful)
+            {
+                resultListener(ProcessOf.Success)
+            }
+        }.addOnFailureListener { exception ->
+            exception.localizedMessage?.let {
+                resultListener(ProcessOf.Error(it))
+            }
+
+        }
+
+    }
+
+
 
 }

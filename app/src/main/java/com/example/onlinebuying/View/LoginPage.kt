@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -22,6 +21,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import com.example.onlinebuying.R
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,6 +37,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.onlinebuying.Model.Pages
+import com.example.onlinebuying.Model.ProcessOf
 import com.example.onlinebuying.Repository.FirebaseRepository
 import com.example.onlinebuying.ViewModel.LoginViewModel
 import com.example.onlinebuying.ViewModelFactory.LoginViewModelFactory
@@ -44,7 +46,6 @@ import com.example.onlinebuying.Widgets.CustomButton
 import com.example.onlinebuying.Widgets.CustomSnackkBar
 import com.example.onlinebuying.Widgets.PasswordOutlinedTextField
 import com.example.onlinebuying.Widgets.UsernameOutlinedTextField
-import com.example.onlinebuying.ui.theme.Navy
 import com.example.onlinebuying.ui.theme.Orange
 import com.example.onlinebuying.ui.theme.Red
 import com.example.onlinebuying.ui.theme.Teal
@@ -64,17 +65,16 @@ fun LoginPage(
     // import androidx.compose.runtime.getValue
     // import androidx.compose.runtime.setValue
     // bunları importlaman lazım aşağıdaki gibi kullanman için
-    var username by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    var usernameErrorState by remember { mutableStateOf(false) }
+    var emailErrorState by remember { mutableStateOf(false) }
     var passwordErrorState by remember { mutableStateOf(false) }
 
     var passwordVisibility by remember { mutableStateOf(false) }
 
     val loginViewModel : LoginViewModel = viewModel(factory = LoginViewModelFactory(firebaseRepository))
 
-    loginViewModel.login()
 
     Scaffold(
         snackbarHost = {
@@ -145,16 +145,16 @@ fun LoginPage(
                     UsernameOutlinedTextField(
                         modifier = Modifier
                             .fillMaxWidth(),
-                        text = username,
+                        text = email,
                         labelText = "Kullanıcı adı",
-                        errorState = usernameErrorState,
+                        errorState = emailErrorState,
                         iconClick =
                         {
-                            username = ""
+                            email = ""
                         },
                         onValueChange = {
-                            usernameErrorState = false
-                            username = it
+                            emailErrorState = false
+                            email = it
                         }
                     )
 
@@ -185,16 +185,37 @@ fun LoginPage(
                         containerColor = Red,
                         iconId = null,
                         onClick = {
-                            check(username.trim(),password.trim()){ isUsernameEmpty,isPasswordEmpty ->
-                                usernameErrorState = isUsernameEmpty
+                            check(email.trim(),password.trim()){ isUsernameEmpty, isPasswordEmpty ->
+                                emailErrorState = isUsernameEmpty
                                 passwordErrorState = isPasswordEmpty
 
                                 if(!isUsernameEmpty && !isPasswordEmpty){
                                     // login işlemleri yapılabilir
                                     scope.launch {
-                                        snackbarHostState.showSnackbar(
-                                            message =  "Başarıyla giriş yaptınız"
-                                        )
+                                            loginViewModel.login(
+                                                email = email,
+                                                password = password
+                                            ){ process ->
+                                                when(process){
+                                                    is ProcessOf.Success ->
+                                                    {
+                                                        navController.navigate(Pages.MainPage.name)
+                                                        scope.launch {
+                                                            snackbarHostState.showSnackbar(message = "SUCCES")
+                                                        }
+
+                                                    }
+                                                    is ProcessOf.Error -> {
+                                                        var errorMessage =process.errorMessage
+                                                        scope.launch {
+                                                            snackbarHostState.showSnackbar(message = errorMessage)
+                                                        }
+                                                        loginViewModel._processOf.value = null
+
+                                                    }
+                                                }
+                                            }
+
                                     }
                                 }
                             }
@@ -216,7 +237,7 @@ fun LoginPage(
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier
                                 .clickable {
-
+                                    navController.navigate(Pages.RegisterPage.name)
                                 }
 
                         )
