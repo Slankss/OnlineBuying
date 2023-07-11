@@ -1,6 +1,9 @@
 package com.example.onlinebuying.View
 
 import android.annotation.SuppressLint
+import android.app.Activity
+import android.content.Intent
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,7 +24,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import com.example.onlinebuying.R
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,13 +35,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.onlinebuying.Activity.CustomerActivity
+import com.example.onlinebuying.Activity.SellerActivity
 import com.example.onlinebuying.Model.Pages
-import com.example.onlinebuying.Model.ProcessOf
+import com.example.onlinebuying.Model.AuthProcessOf
 import com.example.onlinebuying.Repository.FirebaseRepository
 import com.example.onlinebuying.ViewModel.LoginViewModel
 import com.example.onlinebuying.ViewModelFactory.LoginViewModelFactory
@@ -61,6 +67,7 @@ fun LoginPage(
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    var context = LocalContext.current as Activity
 
     // import androidx.compose.runtime.getValue
     // import androidx.compose.runtime.setValue
@@ -75,6 +82,9 @@ fun LoginPage(
 
     val loginViewModel : LoginViewModel = viewModel(factory = LoginViewModelFactory(firebaseRepository))
 
+    BackHandler {
+        context.finish()
+    }
 
     Scaffold(
         snackbarHost = {
@@ -165,6 +175,7 @@ fun LoginPage(
                         labelText = "Parola",
                         errorState = passwordErrorState,
                         passwordVisibility = passwordVisibility,
+                        isThereTrailingIcon = true,
                         iconClick =
                         {
                             passwordVisibility = !passwordVisibility
@@ -185,40 +196,56 @@ fun LoginPage(
                         containerColor = Red,
                         iconId = null,
                         onClick = {
-                            check(email.trim(),password.trim()){ isUsernameEmpty, isPasswordEmpty ->
-                                emailErrorState = isUsernameEmpty
-                                passwordErrorState = isPasswordEmpty
 
-                                if(!isUsernameEmpty && !isPasswordEmpty){
-                                    // login işlemleri yapılabilir
-                                    scope.launch {
-                                            loginViewModel.login(
-                                                email = email,
-                                                password = password
-                                            ){ process ->
-                                                when(process){
-                                                    is ProcessOf.Success ->
-                                                    {
-                                                        navController.navigate(Pages.MainPage.name)
-                                                        scope.launch {
-                                                            snackbarHostState.showSnackbar(message = "SUCCES")
-                                                        }
+                            var emailStr = email.trim()
+                            var passwordStr = password.trim()
 
-                                                    }
-                                                    is ProcessOf.Error -> {
-                                                        var errorMessage =process.errorMessage
-                                                        scope.launch {
-                                                            snackbarHostState.showSnackbar(message = errorMessage)
-                                                        }
-                                                        loginViewModel._processOf.value = null
+                            var result = check(emailStr,passwordStr)
 
-                                                    }
-                                                }
+                            emailErrorState = email.isBlank()
+                            passwordErrorState = password.isBlank()
+
+                            if(result){
+                                loginViewModel.login(
+                                    email = emailStr,
+                                    password = passwordStr
+                                ){ process ->
+                                    when(process){
+                                        is AuthProcessOf.Success ->
+                                        {
+                                            if(process.user != null){
+                                                context.startActivity(
+                                                    Intent(
+                                                        context,
+                                                        when(process.user.seller_account){
+                                                            true -> SellerActivity::class.java
+                                                            false -> CustomerActivity::class.java
+                                                        })
+
+                                                )
+                                                context.finish()
                                             }
+                                            else{
+                                                navController.navigate(Pages.CreateProfilePage.name)
+                                            }
+                                        }
+                                        is AuthProcessOf.Error -> {
+                                            var errorMessage =process.errorMessage
+                                            scope.launch {
+                                                snackbarHostState.showSnackbar(message = errorMessage)
+                                            }
+                                            loginViewModel._processOf.value = null
 
+                                        }
                                     }
                                 }
                             }
+                            else{
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(message = "Girdiğiniz bilgileri kontrol ediniz")
+                                }
+                            }
+
                         }
                     )
 
@@ -228,6 +255,7 @@ fun LoginPage(
                     ) {
                         Text(
                             text = "Hesabın yok mu?",
+                            color = Color.Black,
                             style = MaterialTheme.typography.labelMedium
                         )
                         Text(
@@ -250,19 +278,15 @@ fun LoginPage(
 
 }
 
-fun check(username  :String,password : String,
-          errorListener : (Boolean,Boolean) -> Unit)
+fun check(username  :String,password : String) : Boolean
 {
 
-    var isUsernameEmpty = false
-    var isPasswordEmpty = false
-
     if(username.isBlank()){
-        isUsernameEmpty = true
+        return false
     }
     if(password.isBlank()){
-        isPasswordEmpty = true
+        return false
     }
-    errorListener(isUsernameEmpty,isPasswordEmpty)
 
+    return true
 }

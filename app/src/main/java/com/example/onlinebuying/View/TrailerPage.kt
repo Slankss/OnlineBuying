@@ -1,7 +1,9 @@
 package com.example.onlinebuying.View
 
+import android.app.Activity
 import android.content.Context
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -51,12 +53,14 @@ fun TrailerPage(
     firebaseRepository: FirebaseRepository
     ){
 
-    var context = LocalContext.current
+    var context = LocalContext.current as Activity
     val scope = rememberCoroutineScope()
 
     val storeData = StoreData(context)
 
-
+    BackHandler {
+        context.finish()
+    }
 
     Column(
         modifier = Modifier
@@ -88,6 +92,7 @@ fun TrailerPage(
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Thin,
             textAlign = TextAlign.Center,
+            color = Color.Black,
             lineHeight = 40.sp,
             fontSize = 24.sp
         )

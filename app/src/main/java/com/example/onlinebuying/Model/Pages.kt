@@ -6,5 +6,14 @@ enum class Pages {
     TrailerPage,
     LoginPage,
     RegisterPage,
-    MainPage,
+    CreateProfilePage,
+
+    SellerPage,
+    CustomerPage,
+
+    MyProductsPage,
+    OrdersPage,
+    AddProductPage,
+    ProfilePage
+
 }

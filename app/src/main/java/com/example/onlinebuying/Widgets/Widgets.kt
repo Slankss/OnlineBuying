@@ -141,7 +141,9 @@ fun UsernameOutlinedTextField(
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Ascii
         ),
-        textStyle = MaterialTheme.typography.bodyMedium
+        textStyle = MaterialTheme.typography.bodyMedium.copy(
+            fontSize = 20.sp
+        )
 
     )
 
@@ -154,7 +156,8 @@ fun PasswordOutlinedTextField(
     text : String,
     labelText : String,
     errorState : Boolean,
-    passwordVisibility : Boolean?,
+    passwordVisibility : Boolean,
+    isThereTrailingIcon : Boolean,
     iconClick : () -> Unit,
     onValueChange : (String) -> Unit
 ){
@@ -185,7 +188,7 @@ fun PasswordOutlinedTextField(
         if(passwordVisibility == null || passwordVisibility) VisualTransformation.None
         else PasswordVisualTransformation(),
         trailingIcon = {
-            if(passwordVisibility != null){
+            if(isThereTrailingIcon){
                 IconButton(
                     onClick =
                     {
@@ -216,6 +219,68 @@ fun PasswordOutlinedTextField(
     )
 
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CustomOutlinedTextField(
+    modifier: Modifier,
+    text : String,
+    lineNumber: Int,
+    labelText : String,
+    keyboardType: KeyboardType,
+    errorState : Boolean,
+    iconClick : () -> Unit,
+    onValueChange : (String) -> Unit
+){
+
+    OutlinedTextField(
+        modifier = modifier,
+        value = text,
+        shape = RoundedCornerShape(8.dp),
+        onValueChange = {
+            onValueChange(it)
+        },
+        label = {
+            Text(
+                text = labelText,
+                color = Color.Black
+            )
+        },
+        colors = TextFieldDefaults.textFieldColors(
+            textColor = Color.Black,
+            errorLabelColor = Color.Red,
+            cursorColor = Color.Black,
+            containerColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.DarkGray,
+            focusedIndicatorColor = Teal
+
+        ),
+        trailingIcon = {
+            IconButton(
+                onClick =
+                {
+                    iconClick()
+                }
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_close),
+                    contentDescription = "Tralaiding icon"
+                )
+            }
+        },
+        maxLines = lineNumber,
+        isError = errorState,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = keyboardType
+        ),
+        textStyle = MaterialTheme.typography.bodyMedium.copy(
+            fontSize = 20.sp
+        )
+
+    )
+
+}
+
 
 @Composable
 fun CustomSnackkBar(

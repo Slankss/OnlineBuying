@@ -3,4 +3,6 @@
 
     <string name="trailer_text">Online alışveriş uygulamasına hoşgeldiniz. Ürün alıp satmak hiç bukadar kolay olmamıştı.
         Hemen hesabınızı oluşturun ve ürün alıp satmaya başlayın</string>
+    <string name="title_activity_seller">SellerActivity</string>
+    <string name="title_activity_custome">CustomeActivity</string>
 </resources>

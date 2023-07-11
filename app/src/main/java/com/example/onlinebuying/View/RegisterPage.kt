@@ -1,6 +1,7 @@
 package com.example.onlinebuying.View
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -12,12 +13,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,21 +30,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.onlinebuying.Model.Pages
+import com.example.onlinebuying.Model.AuthProcessOf
 import com.example.onlinebuying.R
 import com.example.onlinebuying.Repository.FirebaseRepository
 import com.example.onlinebuying.ViewModel.RegisterViewModel
 import com.example.onlinebuying.ViewModelFactory.RegisterViewModelFactory
 import com.example.onlinebuying.Widgets.CustomButton
+import com.example.onlinebuying.Widgets.CustomSnackkBar
 import com.example.onlinebuying.Widgets.PasswordOutlinedTextField
 import com.example.onlinebuying.Widgets.UsernameOutlinedTextField
-import com.example.onlinebuying.ui.theme.Navy
 import com.example.onlinebuying.ui.theme.Orange
 import com.example.onlinebuying.ui.theme.Red
+import com.example.onlinebuying.ui.theme.Teal
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -63,6 +67,7 @@ fun RegisterPage(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordAgain by remember { mutableStateOf("") }
+    var context = LocalContext.current as Activity
 
     var emailErrorState by remember { mutableStateOf(false) }
     var passwordErrorState by remember { mutableStateOf(false) }
@@ -72,7 +77,15 @@ fun RegisterPage(
     var registerViewModel : RegisterViewModel = viewModel(factory = RegisterViewModelFactory(firebaseRepository))
 
     Scaffold(
-
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState){ snackBarData ->
+                CustomSnackkBar(
+                    message = snackBarData.visuals.message,
+                    containerColor = Teal,
+                    icon = null
+                )
+            }
+        }
     )
     {
         Column(
@@ -118,6 +131,7 @@ fun RegisterPage(
                             modifier = Modifier
                                 .align(Alignment.Center),
                             text =  "Hesap Oluştur",
+                            color = Color.Black,
                             style = MaterialTheme.typography.headlineMedium
                         )
                     }
@@ -127,7 +141,7 @@ fun RegisterPage(
                         modifier = Modifier
                             .fillMaxWidth(),
                         text = email,
-                        labelText = "Kullanıcı adı",
+                        labelText = "Email",
                         errorState = emailErrorState,
                         iconClick =
                         {
@@ -144,7 +158,8 @@ fun RegisterPage(
                         text = password,
                         labelText = "Parola",
                         errorState = passwordErrorState,
-                        passwordVisibility = null,
+                        passwordVisibility = false,
+                        isThereTrailingIcon = false,
                         iconClick =
                         {
 
@@ -159,7 +174,8 @@ fun RegisterPage(
                         text = passwordAgain,
                         labelText = "Parola tekrar",
                         errorState = passwordAgainErrorState,
-                        passwordVisibility = null,
+                        passwordVisibility = false,
+                        isThereTrailingIcon = false,
                         iconClick =
                         {
 
@@ -186,7 +202,22 @@ fun RegisterPage(
                             passwordAgainErrorState = passwordAgain.isBlank()
 
                             if(result){
-
+                                registerViewModel.register(email, password){
+                                    when(it){
+                                        is AuthProcessOf.Success -> navController.navigate(Pages.CreateProfilePage.name)
+                                        is AuthProcessOf.Error -> {
+                                            var errorMessage = it.errorMessage
+                                            scope.launch {
+                                                snackbarHostState.showSnackbar(message = errorMessage)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            else{
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(message = "Girdiğiniz değerleri kontrol edin")
+                                }
                             }
 
                         }
@@ -223,7 +254,7 @@ fun checkRegister(
         return false
     if(passwordAgain.isBlank())
         return false
-    if(password.isNotBlank() && passwordAgain.isNotBlank() && password == passwordAgain)
+    if(password.isNotBlank() && passwordAgain.isNotBlank() && password != passwordAgain)
         return false
 
     return true

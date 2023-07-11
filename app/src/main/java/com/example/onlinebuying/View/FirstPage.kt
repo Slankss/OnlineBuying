@@ -1,8 +1,9 @@
 package com.example.onlinebuying.View
 
+import android.app.Activity
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,7 +14,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.onlinebuying.ui.theme.Orange
-import com.google.android.material.shape.MaterialShapeDrawable.CompatibilityShadowMode
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
@@ -25,6 +25,8 @@ import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
+import com.example.onlinebuying.Activity.CustomerActivity
+import com.example.onlinebuying.Activity.SellerActivity
 import com.example.onlinebuying.Model.Pages
 import com.example.onlinebuying.R
 import com.example.onlinebuying.Repository.FirebaseRepository
@@ -41,7 +43,7 @@ fun FirstPage(
     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.loading))
     val progress by animateLottieCompositionAsState(composition = composition)
 
-    val context = LocalContext.current
+    val context = LocalContext.current as Activity
     var scope = rememberCoroutineScope()
     val viewModel : FirstPageViewModel = viewModel(factory = FirstPageViewModelFactory(firebaseRepository,context))
 
@@ -51,7 +53,18 @@ fun FirstPage(
         scope.launch {
             page.collect{
                 it?.let{
-                    navController.navigate(it)
+                    when(it){
+                        Pages.SellerPage.name -> {
+                            context.startActivity(Intent(context,SellerActivity::class.java))
+                            context.finish()
+                        }
+                        Pages.CustomerPage.name -> {
+                            context.startActivity(Intent(context,CustomerActivity::class.java))
+                            context.finish()
+                        }
+                        else -> navController.navigate(it)
+                    }
+
                 }
             }
         }
