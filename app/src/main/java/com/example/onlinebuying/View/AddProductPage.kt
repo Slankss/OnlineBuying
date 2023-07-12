@@ -1,18 +1,25 @@
 package com.example.onlinebuying.View
 
+import android.Manifest
 import android.annotation.SuppressLint
-import android.app.Activity
+import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
-import android.widget.Space
+import android.provider.MediaStore.Video.Media
+import android.util.Log
+import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResultRegistry
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.launch
+import androidx.camera.view.LifecycleCameraController
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.OverscrollEffect
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -28,9 +35,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.AlertDialog
 import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.Surface
 import androidx.compose.material3.Card
@@ -56,28 +61,36 @@ import com.example.onlinebuying.R
 import com.example.onlinebuying.Repository.FirebaseRepository
 import com.example.onlinebuying.Widgets.CustomButton
 import com.example.onlinebuying.Widgets.CustomOutlinedTextField
-import com.example.onlinebuying.Widgets.UsernameOutlinedTextField
 import androidx.compose.runtime.*
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.focus.focusModifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.core.content.FileProvider
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.annotation.ExperimentalCoilApi
+import coil.compose.AsyncImage
+import com.example.onlinebuying.Model.ImageFileProvider
+import com.example.onlinebuying.Model.Product
+import com.example.onlinebuying.Model.createImageFile
+import com.example.onlinebuying.ViewModel.AddProductPageViewModel
+import com.example.onlinebuying.ViewModelFactory.AddProductPageViewModelFactory
 import com.example.onlinebuying.ui.theme.Navy
-import com.example.onlinebuying.ui.theme.Teal
-import firebase.com.protolitewrapper.BuildConfig
-import java.util.Objects
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.rememberPermissionState
+import io.grpc.ExperimentalApi
+import kotlinx.coroutines.launch
+import java.io.File
+import java.lang.Exception
+import java.net.URI
+import java.util.*
 
-@OptIn(ExperimentalCoilApi::class)
+@OptIn(ExperimentalCoilApi::class, ExperimentalPermissionsApi::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 @ExperimentalMaterial3Api
@@ -88,6 +101,10 @@ fun AddProductPage(
 
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+
+    var addProductViewModel : AddProductPageViewModel = viewModel(
+        factory = AddProductPageViewModelFactory(firebaseRepository)
+    )
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -103,33 +120,39 @@ fun AddProductPage(
 
     var dialogVisibility by remember { mutableStateOf(false) }
 
-    //var cameraPermissionState
+    val cameraPermission = Manifest.permission.CAMERA
 
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var imageBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
-    val launcher = rememberLauncherForActivityResult(
+    var cameraLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicturePreview() )
+    {
+            imageBitmap = it
+    }
+
+    val imageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()) { uri ->
 
-           imageUri = uri
+        uri?.let{
+            getImageFromGallery(context,it){
+                imageBitmap = it
+            }
+        }
     }
 
-    var cameraLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.TakePicture()){ uri ->
-
-        //mageUri = uri
-    }
-
-    // get image from gallery
-    imageUri?.let{
-        if(Build.VERSION.SDK_INT < 28){
-            imageBitmap = MediaStore.Images.Media.getBitmap(context.contentResolver,it)
+    val requestLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()) { isGranted ->
+        if(isGranted){
+            // show camera
+            val uri = ImageFileProvider.getImageUri(context)
+            imageUri = uri
+            cameraLauncher.launch(null)
         }
         else{
-            val source = ImageDecoder.createSource(context.contentResolver,it)
-            imageBitmap = ImageDecoder.decodeBitmap(source)
+            // showDialog
         }
     }
-
 
     var dialogColor = Color(0xFFFFFFFF)
 
@@ -170,11 +193,10 @@ fun AddProductPage(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
-
                     Card(
                         modifier = Modifier
                             .clickable {
-                                launcher.launch("image/*")
+                                imageLauncher.launch("image/*")
                                 dialogVisibility = false
                             }
                             .weight(1f),
@@ -207,6 +229,27 @@ fun AddProductPage(
                     Spacer(modifier = Modifier.width(20.dp))
                     Card(
                         modifier = Modifier
+                            .clickable {
+                                checkAndRequestCameraPermission(
+                                    context,
+                                    cameraPermission
+                                ) { isGranted ->
+                                    when (isGranted) {
+                                        true -> {
+                                            try {
+                                                val uri = ImageFileProvider.getImageUri(context)
+                                                imageUri = uri
+                                                cameraLauncher.launch(null)
+                                                dialogVisibility = false
+                                            } catch (e: Exception) {
+                                                Log.e("errorumsu", e.localizedMessage)
+                                            }
+                                        }
+
+                                        else -> requestLauncher.launch(cameraPermission)
+                                    }
+                                }
+                            }
                             .weight(1f),
                         elevation = CardDefaults.cardElevation(
                             defaultElevation = 7.dp
@@ -239,7 +282,6 @@ fun AddProductPage(
         }
     }
 
-
     Scaffold() {
         Column(
             modifier = Modifier
@@ -267,9 +309,10 @@ fun AddProductPage(
                     )
                 ){
                     Image(
-                        bitmap = imageBitmap!!.asImageBitmap(),
+                        bitmap = imageBitmap?.asImageBitmap()!!,
                         contentDescription = null,
-                        modifier = Modifier,
+                        modifier = Modifier
+                            .requiredSize(200.dp),
                         contentScale = ContentScale.Crop
                     )
                 }
@@ -393,6 +436,24 @@ fun AddProductPage(
                 iconId = R.drawable.ic_add
             ) {
 
+                nameErrorState = name.isBlank()
+                descriptionErrorState = description.isBlank()
+                stockErrorState = stock.isBlank()
+                priceErrorState = price.isBlank()
+
+                if(!nameErrorState && !descriptionErrorState && !stockErrorState && !priceErrorState){
+                    if(imageBitmap != null){
+                        var product = Product(null,name,description,null, price.toDouble()
+                            ,stock.toInt(),imageBitmap)
+                        addProductViewModel.addProduct(product)
+                    }
+                    else{
+                        scope.launch {
+                            snackbarHostState.showSnackbar(message = "Ürünün fotoğrafını yükleyin!")
+                        }
+                    }
+                }
+
             }
 
 
@@ -444,10 +505,46 @@ fun ProductInput(
     }
 }
 
-fun getImageFromGallery(){
 
+fun checkAndRequestCameraPermission(
+    context: Context,
+    permission: String,
+    isGranted : (Boolean) -> Unit
+) {
+    val permissionCheckResult = ContextCompat.checkSelfPermission(context, permission)
+
+    var isGrantedState = permissionCheckResult == PackageManager.PERMISSION_GRANTED
+    isGranted(isGrantedState)
 }
+fun getImageFromGallery(context : Context,imageUri : Uri,getBitmap : (Bitmap) ->Unit){
+    try {
+        if(Build.VERSION.SDK_INT < 28){
+            var imageBitmap = MediaStore.Images.Media.getBitmap(context.contentResolver,imageUri)
+            getBitmap(imageBitmap)
+        }
+        else{
+            val source = ImageDecoder.createSource(context.contentResolver,imageUri)
+            var imageBitmap = ImageDecoder.decodeBitmap(source)
+            getBitmap(imageBitmap)
+        }
+    }catch (e : Exception){
+        Log.e("errorumsu",e.localizedMessage)
+    }
+}
+@Composable
+fun LoadingDialog(){
 
-fun getImageFromCamera(){
+    Dialog(
+        onDismissRequest = {
+
+        }
+    ) {
+        Surface(
+            modifier = Modifier
+                .padding(25.dp))
+        {
+
+        }
+    }
 
 }
