@@ -23,6 +23,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -64,10 +65,13 @@ import com.example.onlinebuying.Widgets.CustomOutlinedTextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -75,11 +79,19 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.annotation.ExperimentalCoilApi
 import coil.compose.AsyncImage
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.LottieDynamicProperties
+import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.onlinebuying.Model.ImageFileProvider
 import com.example.onlinebuying.Model.Product
 import com.example.onlinebuying.Model.createImageFile
+import com.example.onlinebuying.ViewModel.AddProcess
 import com.example.onlinebuying.ViewModel.AddProductPageViewModel
 import com.example.onlinebuying.ViewModelFactory.AddProductPageViewModelFactory
+import com.example.onlinebuying.Widgets.LoadingDialog
+import com.example.onlinebuying.Widgets.SuccessDialog
 import com.example.onlinebuying.ui.theme.Navy
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberPermissionState
@@ -133,10 +145,9 @@ fun AddProductPage(
 
     val imageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()) { uri ->
-
         uri?.let{
-            getImageFromGallery(context,it){
-                imageBitmap = it
+            getImageFromGallery(context,it){ bitmap ->
+                imageBitmap = bitmap
             }
         }
     }
@@ -152,6 +163,41 @@ fun AddProductPage(
         else{
             // showDialog
         }
+    }
+
+    var loading_dialog_visibility by remember { mutableStateOf(false) }
+    var add_process = addProductViewModel.addProcess.collectAsState()
+
+    when(add_process.value){
+        is AddProcess.Loading -> {
+            loading_dialog_visibility = true
+        }
+        is AddProcess.Success ->{
+            SuccessDialog(text = "Ürün başarıyla eklendi") {
+                addProductViewModel.setAddProcess(AddProcess.NotStarted)
+                name = ""
+                description = ""
+                stock = ""
+                price = ""
+                imageBitmap = null
+            }
+        }
+        is AddProcess.Error -> {
+            SuccessDialog(text = "Ürün eklenirken hata oluştu") {
+                addProductViewModel.setAddProcess(AddProcess.NotStarted)
+            }
+        }
+        else -> {
+            loading_dialog_visibility = false
+        }
+    }
+    loading_dialog_visibility = when(add_process.value){
+        is AddProcess.Loading -> true
+        else -> false
+    }
+
+    if(loading_dialog_visibility){
+        LoadingDialog()
     }
 
     var dialogColor = Color(0xFFFFFFFF)
@@ -294,8 +340,9 @@ fun AddProductPage(
             horizontalAlignment = Alignment.CenterHorizontally
         )
         {
+            var focusManager = LocalFocusManager.current
 
-            if(imageUri != null && imageBitmap != null){
+            if(imageBitmap != null){
                 Card(
                     modifier = Modifier
                         .padding(top = 20.dp)
@@ -444,8 +491,9 @@ fun AddProductPage(
                 if(!nameErrorState && !descriptionErrorState && !stockErrorState && !priceErrorState){
                     if(imageBitmap != null){
                         var product = Product(null,name,description,null, price.toDouble()
-                            ,stock.toInt(),imageBitmap)
-                        addProductViewModel.addProduct(product)
+                            ,stock.toInt(),null)
+
+                        addProductViewModel.addProduct(product,imageBitmap!!)
                     }
                     else{
                         scope.launch {
@@ -472,6 +520,7 @@ fun ProductInput(
     iconClick :() -> Unit,
     onValueChange : (String) -> Unit
 ){
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -531,20 +580,5 @@ fun getImageFromGallery(context : Context,imageUri : Uri,getBitmap : (Bitmap) ->
         Log.e("errorumsu",e.localizedMessage)
     }
 }
-@Composable
-fun LoadingDialog(){
 
-    Dialog(
-        onDismissRequest = {
 
-        }
-    ) {
-        Surface(
-            modifier = Modifier
-                .padding(25.dp))
-        {
-
-        }
-    }
-
-}

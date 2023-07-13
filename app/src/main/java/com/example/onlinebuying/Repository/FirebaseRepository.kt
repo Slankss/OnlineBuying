@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.util.Log
 import com.example.onlinebuying.Model.AuthProcessOf
+import com.example.onlinebuying.Model.Ordered
 import com.example.onlinebuying.Model.Product
 import com.example.onlinebuying.Model.User
 import com.google.firebase.auth.FirebaseAuth
@@ -13,6 +14,8 @@ import com.google.firebase.firestore.Query
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
 import java.io.ByteArrayOutputStream
+import java.lang.reflect.Field
+import java.util.concurrent.DelayQueue
 
 class FirebaseRepository() {
 
@@ -109,12 +112,12 @@ class FirebaseRepository() {
         }
     }
 
-    fun addProduct(product : Product,onSucces : (Boolean) -> Unit){
+    fun addProduct(product : Product,image_bitmap : Bitmap,onSucces : (Boolean) -> Unit){
 
         getLastProductId{ lastId ->
             saveProductImage(
                 product_id = if(lastId == null) 1 else lastId+1,
-                product.image_bitmap!!){ uri ->
+                image_bitmap){ uri ->
                 uri?.let{
                     Log.e("errorumsu",it.toString())
                     product.id = if(lastId == null) 1 else lastId+1
@@ -195,7 +198,7 @@ class FirebaseRepository() {
                 if(task.isSuccessful){
                     var document = task.result.documents
                     if(document.isNotEmpty()){
-                        var lastId = document[0].getDouble("id").toString().toInt() as Int
+                        var lastId = document[0].getDouble("id")?.toInt()
                         getLastId(lastId)
                     }
                     else{
@@ -203,6 +206,62 @@ class FirebaseRepository() {
                     }
                 }
             }
+
+    }
+
+    fun getProductList(seller_email : String?,orderByName : Ordered,
+                       orderByDirection : Ordered,
+                       getProductList : (ArrayList<Product>?) -> Unit){
+
+
+        Log.e("arabam","firebase repo geldi")
+
+        db.collection("Product")
+            .orderBy( when(orderByName)
+            {
+                is Ordered.Name -> "name"
+                else -> "id"
+            },when(orderByDirection){
+                is Ordered.Descending -> Query.Direction.DESCENDING
+                else -> Query.Direction.ASCENDING
+            })
+            .get()
+            .addOnCompleteListener{ task ->
+            if(task.isSuccessful){
+                var document = task.result.documents
+                if(document.isNotEmpty()){
+                    var productList = arrayListOf<Product>()
+
+                    Log.e("arabam","BOŞ DEĞİL")
+
+                    document.forEachIndexed { index, doc->
+                        val id = doc.getDouble("id")?.toInt() as Int
+                        val name = doc.getString("name") as String
+                        val description = doc.getString("descripton") as String
+                        val seller_email = doc.getString("seller_email") as String
+                        val price = doc.getDouble("price") as Double
+                        val stock = doc.getDouble("stock")?.toInt() as Int
+                        val image_url = doc.getString("image_url") as String
+
+                        var product = Product(id, name,description,seller_email,price,stock,image_url)
+                        productList.add(product)
+
+                        Log.e("arabam",product.name)
+                    }
+                    getProductList(productList)
+                }
+                else{
+                    Log.e("arabam","LİSTE BOŞ")
+
+                    getProductList(null)
+                }
+            }
+
+            else{
+                Log.e("arabam","succef olmadı")
+
+            }
+        }
 
     }
 }

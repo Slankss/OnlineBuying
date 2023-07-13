@@ -1,8 +1,10 @@
 package com.example.onlinebuying.Model
 
 import android.graphics.Bitmap
+import androidx.room.Dao
 import com.google.android.gms.common.internal.safeparcel.SafeParcelable.Constructor
 
+@Dao
 data class Product(
     var id : Int?,
     var name : String,
@@ -10,21 +12,8 @@ data class Product(
     var seller_email : String?,
     var price : Double,
     var stock : Int,
+    var image_url : String?
 )
 {
-    var image_bitmap : Bitmap? = null
-    var image_url : String? = null
-    constructor(id : Int?,name : String,description : String,seller_email : String?,
-        price : Double,stock : Int,image_url : String?)
-            : this(id,name,description,seller_email,price,stock){
-                this.image_url = image_url
-            }
-
-    constructor(id : Int?, name : String, description : String, seller_email : String?,
-                price : Double, stock : Int,image_bitmap : Bitmap?)
-            : this(id,name,description,seller_email,price,stock){
-                this.image_bitmap = image_bitmap
-            }
-
 
 }
