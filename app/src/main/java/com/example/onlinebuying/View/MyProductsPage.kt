@@ -2,11 +2,17 @@ package com.example.onlinebuying.View
 
 import android.annotation.SuppressLint
 import android.provider.SyncStateContract.Columns
+import android.widget.Space
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -21,6 +28,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -36,21 +45,33 @@ import com.example.onlinebuying.Repository.FirebaseRepository
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.ImageLoader
 import coil.compose.AsyncImage
+import coil.compose.AsyncImagePainter
+import coil.compose.ImagePainter
+import coil.compose.rememberAsyncImagePainter
+import coil.compose.rememberImagePainter
+import coil.request.ImageRequest
 import com.example.onlinebuying.Model.Order
 import com.example.onlinebuying.Model.Ordered
 import com.example.onlinebuying.Model.Product
+import com.example.onlinebuying.Model.SellerPages
 import com.example.onlinebuying.ViewModel.MyProductsPageViewModel
 import com.example.onlinebuying.ViewModel.ProductProcess
 import com.example.onlinebuying.ViewModelFactory.MyProductsPageViewModelFactory
 import com.example.onlinebuying.ui.theme.Orange
 import com.example.onlinebuying.ui.theme.Teal
+import com.example.onlinebuying.R
 
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -64,26 +85,16 @@ fun MyProductsPage(
     val scope = rememberCoroutineScope()
     var snackbarHostState = remember { SnackbarHostState() }
 
-    var testOrder = Order(1,2,"aa","bb",null,false)
-
-    var orderlist by remember {
-        mutableStateOf(
-            listOf(
-                testOrder,
-                testOrder,
-                testOrder,
-                testOrder,
-                testOrder
-            )
-        )
-    }
-
     var myProductsViewModel : MyProductsPageViewModel = viewModel(factory = MyProductsPageViewModelFactory(firebaseRepository))
 
     var orderByField by remember { mutableStateOf<Ordered>(Ordered.Date) }
     var orderByDirection by remember { mutableStateOf<Ordered>(Ordered.Descending) }
 
     var productState = myProductsViewModel.productProcess.collectAsState()
+
+    LaunchedEffect(key1 = true){
+        myProductsViewModel.getProductListFromFirebase(orderByField,orderByDirection)
+    }
 
     Scaffold() {
         Column(
@@ -207,7 +218,7 @@ fun MyProductsPage(
                                         myProductsViewModel.getProductListFromFirebase(
                                             orderByField,orderByDirection
                                         )
-                                        selectedOrderField = index })
+                                        selectedOrderDirection = index })
                             }
                         }
                     }
@@ -225,7 +236,8 @@ fun MyProductsPage(
                     {
                         ProductList(
                             productList = (productState.value as ProductProcess.Success)
-                                .productList)
+                                .productList, navController)
+
                     }
                     else -> LoadingScreen()
                 }
@@ -235,14 +247,14 @@ fun MyProductsPage(
 }
 
 @Composable
-fun ProductList(productList : ArrayList<Product>){
+fun ProductList(productList : ArrayList<Product>,navController: NavController){
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(2)
     )
     {
         items(productList){ product ->
-            ProductItem(product = product)
+            ProductItem(product = product, navController)
         }
 
     }
@@ -250,20 +262,42 @@ fun ProductList(productList : ArrayList<Product>){
 }
 
 @Composable
-fun ProductItem(product: Product){
+fun ProductItem(product: Product,navController: NavController){
+
+
 
     Column(
         modifier = Modifier
             .padding(10.dp)
             .clip(RoundedCornerShape(24.dp))
+            .clickable {
+                navController.navigate("${SellerPages.ProductDetailPage.route}/${product.id}")
+            }
+            .border(
+                BorderStroke(
+                    width = 2.dp,
+                    color = if(product.id!! % 2 == 0) Orange else Teal
+                )
+            )
     ) {
-        AsyncImage(
+        var painter = rememberAsyncImagePainter(
+            ImageRequest.Builder(LocalContext.current)
+                .data(data = product.image_url)
+                .apply {
+                    crossfade(true)
+                    placeholder(R.drawable.place_holder)
+                }.build()
+        )
+
+        Image(
             modifier = Modifier
+                .fillMaxWidth()
                 .height(175.dp),
             contentScale = ContentScale.Crop,
-            model = product.image_url,
-            contentDescription = product.name
-        )
+            painter = painter,
+            contentDescription = product.name,
+
+            )
 
         Box(
             modifier = Modifier
@@ -308,5 +342,31 @@ fun LoadingScreen() {
 
 @Composable
 fun FailedScreen(){
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+    ){
+        Row(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ){
+            Text(
+                text = "Ürün bulunamadı",
+                color = Color.Black,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Thin
+                )
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Image(
+                painter = painterResource(id = R.drawable.ic_warning),
+                contentDescription = "no data")
+        }
+    }
 
 }

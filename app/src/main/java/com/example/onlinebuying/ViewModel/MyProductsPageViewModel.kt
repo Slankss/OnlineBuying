@@ -24,7 +24,6 @@ class MyProductsPageViewModel(
 
 
     init {
-        getProductListFromFirebase(Ordered.Date,Ordered.Descending)
     }
 
     fun getProductListFromFirebase(orderByField : Ordered,orderByDirection : Ordered){

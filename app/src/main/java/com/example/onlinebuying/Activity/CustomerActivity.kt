@@ -10,7 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.onlinebuying.Activity.ui.theme.OnlineBuyingTheme
+import com.example.onlinebuying.ui.theme.OnlineBuyingTheme
 
 class CustomerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

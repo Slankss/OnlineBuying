@@ -342,6 +342,9 @@ fun AddProductPage(
         {
             var focusManager = LocalFocusManager.current
 
+            var maxPrice = 10000000 // 10 milyon
+            var maxStock = 1000
+
             if(imageBitmap != null){
                 Card(
                     modifier = Modifier
@@ -418,12 +421,14 @@ fun AddProductPage(
                 keyboardType = KeyboardType.Text,
                 lineNumber = 1,
                 errorState = nameErrorState,
+                limitText = "(azami 100 karakter)",
                 iconClick =
                 {
                     name = ""
                 },
                 onValueChange = {
-                    name = it
+                    if(it.length <= 100)
+                        name = it
                 }
             )
 
@@ -432,13 +437,15 @@ fun AddProductPage(
                 inputText = description,
                 keyboardType = KeyboardType.Text,
                 lineNumber = 3,
+                limitText = "(azami 250 karakter)",
                 errorState = descriptionErrorState,
                 iconClick =
                 {
                     description = ""
                 },
                 onValueChange = {
-                    description = it
+                    if(it.length <= 250)
+                       description = it
                 }
             )
 
@@ -447,28 +454,44 @@ fun AddProductPage(
                 inputText = stock,
                 keyboardType = KeyboardType.Number,
                 lineNumber = 1,
+                limitText = "(azami 1000 adet)",
                 errorState = stockErrorState,
                 iconClick =
                 {
                     stock = ""
                 },
                 onValueChange = {
-                    stock = it
+                    if(it.isBlank()){
+                        stock = it
+                    }
+                    else {
+                        val stock_double = it.trim().toDouble()
+                        if(stock_double <= maxStock)
+                            stock = it
+                    }
                 }
             )
 
             ProductInput(
                 labelText = "Ürün Fiyatı",
                 inputText = price,
-                keyboardType = KeyboardType.Number,
+                keyboardType = KeyboardType.Decimal,
                 lineNumber = 1,
+                limitText = "(azami 10 milyon tl)",
                 errorState = priceErrorState,
                 iconClick =
                 {
                     price = ""
                 },
                 onValueChange = {
-                    price = it
+                    if(it.isBlank()){
+                        price = it
+                    }
+                    else {
+                        val price_double = it.trim().toDouble()
+                        if(price_double <= maxPrice)
+                            price = it
+                    }
                 }
             )
 
@@ -513,6 +536,7 @@ fun AddProductPage(
 @Composable
 fun ProductInput(
     labelText : String,
+    limitText : String,
     inputText : String,
     keyboardType: KeyboardType,
     lineNumber : Int,
@@ -527,15 +551,29 @@ fun ProductInput(
             .padding(horizontal = 25.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
+        Row(
             modifier = Modifier
                 .align(Alignment.Start)
                 .padding(bottom = 7.dp, start = 7.dp),
-            text = labelText,
-            color = Color.Black,
-            fontSize = 20.sp,
-            style = MaterialTheme.typography.titleMedium
-        )
+            verticalAlignment = Alignment.CenterVertically
+        ){
+            Text(
+                modifier = Modifier ,
+                text = labelText,
+                color = Color.Black,
+                fontSize = 20.sp,
+                style = MaterialTheme.typography.titleMedium
+            )
+            Text(
+                modifier = Modifier
+                    .padding(start =  5.dp),
+                text = limitText,
+                color = Color.Gray,
+                fontSize = 17.sp,
+                style = MaterialTheme.typography.titleMedium
+            )
+        }
+       
         CustomOutlinedTextField(
             modifier = Modifier
                 .fillMaxWidth(),

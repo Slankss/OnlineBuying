@@ -2,21 +2,16 @@ package com.example.onlinebuying.Activity
 
 import android.annotation.SuppressLint
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
-import androidx.compose.material.minimumInteractiveComponentSize
-import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -30,28 +25,24 @@ import com.example.onlinebuying.theme.OnlineBuyingTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.modifier.modifierLocalMapOf
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.onlinebuying.Model.Pages
+import androidx.navigation.navArgument
 import com.example.onlinebuying.Model.SellerPages
-import com.example.onlinebuying.R
 import com.example.onlinebuying.Repository.FirebaseRepository
 import com.example.onlinebuying.View.AddProductPage
 import com.example.onlinebuying.View.MyProductsPage
 import com.example.onlinebuying.View.OrdersPage
+import com.example.onlinebuying.View.ProductDetailPage
 import com.example.onlinebuying.View.ProfilePage
 import com.example.onlinebuying.ui.theme.Orange
 import com.example.onlinebuying.ui.theme.Teal
-import com.google.android.material.bottomnavigation.BottomNavigationItemView
-import com.google.android.material.bottomnavigation.BottomNavigationMenuView
-import com.google.firestore.v1.StructuredQuery.Order
 
 class SellerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -95,15 +86,19 @@ fun SellerPage() {
                         color = Color.White
                     )
                     .defaultMinSize(minHeight = 75.dp)
-                    .padding(start = 10.dp, end =  10.dp, bottom = 10.dp)
+                    .padding(
+                        start = 10.dp,
+                        end = 10.dp,
+                        bottom = 10.dp
+                    )
                     .clip(RoundedCornerShape(90.dp)),
                 backgroundColor = Teal
             ) {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currenRoute = navBackStackEntry?.destination?.route
+                val currentRoute = navBackStackEntry?.destination?.route
 
                 items.forEach{ page ->
-                    var isSelected = currenRoute == page.route
+                    var isSelected = currentRoute == page.route
                     BottomNavigationItem(
                         modifier = Modifier
                             .background(
@@ -126,7 +121,7 @@ fun SellerPage() {
                                 modifier = Modifier
                                     .padding(bottom = 7.dp)
                                     .size(28.dp),
-                                painter = painterResource(id = page.iconId),
+                                painter = painterResource(id = page.iconId!!),
                                 contentDescription = null,
                                 tint = when(isSelected){
                                     true -> Color.White
@@ -137,9 +132,6 @@ fun SellerPage() {
                         onClick =
                         {
                             navController.navigate(page.route){
-                                popUpTo(navController.graph.findStartDestination().id){
-                                    saveState = true
-                                }
                                 launchSingleTop = true
                                 restoreState = true
                             }
@@ -172,6 +164,23 @@ fun SellerPage() {
             }
             composable(SellerPages.ProfilePage.route){
                 ProfilePage(navController = navController,firebaseRepository = firebaseRepository)
+            }
+            
+            composable(
+                route = "${SellerPages.ProductDetailPage.route}/{product_id}",
+                arguments = listOf(
+                    navArgument("product_id"){
+                        type = NavType.IntType
+                    }
+                )
+                )
+            {
+                
+                ProductDetailPage(
+                    navContreller = navController,
+                    firebaseRepository = firebaseRepository,
+                    it.arguments?.getInt("product_id")
+                )
             }
 
         }

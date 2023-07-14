@@ -24,6 +24,8 @@ class FirebaseRepository() {
     lateinit var db : FirebaseFirestore
     var storage = Firebase.storage
     var storageRef = storage.reference
+    
+    var curentProductId : String? = null
 
     init {
         auth = FirebaseAuth.getInstance()
@@ -173,22 +175,42 @@ class FirebaseRepository() {
                     document[0].apply{
                         val id = getDouble("id")?.toInt() as Int
                         val name = getString("name") as String
-                        val description = getString("description") as String
+                        val description = getString("descripton") as String
                         val seller_email = getString("seller_email") as String
                         val price = getDouble("price") as Double
-                        val stock = getDouble("stock").toString().toInt() as Int
+                        val stock = getDouble("stock")?.toInt() as Int
                         val image_url = getString("image_url") as String
 
                         var product = Product(id, name,description,seller_email,price,stock,image_url)
+                        curentProductId = this.id
                         getProduct(product)
                     }
                 }
                 else{
+                    curentProductId = null
                     getProduct(null)
                 }
             }
         }
 
+    }
+    
+    fun updateProduct(name : String,description : String,
+            stock : Double,price : Double,onSucces: (Boolean) -> Unit
+    )
+    {
+        if(curentProductId != null){
+            db.collection("Product").document(curentProductId!!)
+                .update("name",name,"descripton",description,
+                "stock",stock,"price",price).addOnCompleteListener{ task ->
+                    if(task.isSuccessful){
+                        onSucces(true)
+                    }
+                    else if(task.exception != null){
+                        onSucces(false)
+                    }
+                }
+        }
     }
 
     fun getLastProductId(getLastId : (Int?) -> Unit){

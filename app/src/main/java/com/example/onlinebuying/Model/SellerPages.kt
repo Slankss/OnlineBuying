@@ -5,7 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import com.example.onlinebuying.R
 
-sealed class SellerPages(val route : String,val label : String,val iconId : Int){
+sealed class SellerPages(val route : String,val label : String,val iconId : Int?){
 
     object MyProductsPage : SellerPages("MyProductsPage","Ürünlerim", R.drawable.ic_products)
 
@@ -15,4 +15,5 @@ sealed class SellerPages(val route : String,val label : String,val iconId : Int)
 
     object ProfilePage : SellerPages("ProfilePage","Profil",R.drawable.ic_profile)
 
+    object ProductDetailPage : SellerPages("ProductDetail","Ürün Detay",null)
 }

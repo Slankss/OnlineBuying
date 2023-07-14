@@ -14,3 +14,5 @@ var Navy = Color(0xFF1D5B79)
 var Teal = Color(0xFF468B97)
 var Red = Color(0xFFEF6262)
 var Orange = Color(0xFFF3AA60)
+
+var Silver = Color(0xFF9DB2BF)
