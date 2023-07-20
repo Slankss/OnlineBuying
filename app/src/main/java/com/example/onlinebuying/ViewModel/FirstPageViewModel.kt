@@ -1,6 +1,7 @@
 package com.example.onlinebuying.ViewModel
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.onlinebuying.Model.Pages
@@ -24,10 +25,10 @@ class FirstPageViewModel(
     init {
         viewModelScope.launch {
             val user = firebaseRepository.user
-
+            
             if(user != null){
                 firebaseRepository.getUserProfile(
-                    email =  "admin@gmail.com",
+                    email =  user.email!!,
                     getUser = { userProfile ->
                         if(userProfile != null){
                             // Profil oluşturulmuş ana sayfaya gidilecek
@@ -67,6 +68,10 @@ class FirstPageViewModel(
                 else -> _page.value = Pages.TrailerPage.name
             }
         }
+    }
+    
+    fun setPage(page : String?){
+        _page.value = page
     }
 
 }

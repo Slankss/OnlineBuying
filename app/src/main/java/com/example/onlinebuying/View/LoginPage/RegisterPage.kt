@@ -1,4 +1,4 @@
-package com.example.onlinebuying.View
+package com.example.onlinebuying.View.LoginPage
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -21,6 +21,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,15 +40,20 @@ import com.example.onlinebuying.Model.Pages
 import com.example.onlinebuying.Model.AuthProcessOf
 import com.example.onlinebuying.R
 import com.example.onlinebuying.Repository.FirebaseRepository
+import com.example.onlinebuying.ViewModel.LoginViewModel
 import com.example.onlinebuying.ViewModel.RegisterViewModel
 import com.example.onlinebuying.ViewModelFactory.RegisterViewModelFactory
 import com.example.onlinebuying.Widgets.CustomButton
 import com.example.onlinebuying.Widgets.CustomSnackkBar
+import com.example.onlinebuying.Widgets.FailedDialog
+import com.example.onlinebuying.Widgets.LoadingDialog
 import com.example.onlinebuying.Widgets.PasswordOutlinedTextField
+import com.example.onlinebuying.Widgets.SuccessDialog
 import com.example.onlinebuying.Widgets.UsernameOutlinedTextField
 import com.example.onlinebuying.ui.theme.Orange
 import com.example.onlinebuying.ui.theme.Red
 import com.example.onlinebuying.ui.theme.Teal
+import com.google.rpc.context.AttributeContext.Auth
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,6 +82,29 @@ fun RegisterPage(
 
     var registerViewModel : RegisterViewModel = viewModel(factory = RegisterViewModelFactory(firebaseRepository))
 
+    var process = registerViewModel.processOf.collectAsState()
+    
+    when(process.value){
+        is AuthProcessOf.Success -> {
+            SuccessDialog(text = "Kayıt olundu") {
+                registerViewModel.setProcess(AuthProcessOf.NotStarted)
+                navController.navigate(Pages.CreateProfilePage.name)
+            }
+        }
+        is AuthProcessOf.Error -> {
+            var errorMessage = (process.value as AuthProcessOf.Error).errorMessage
+            FailedDialog(text = errorMessage) {
+                registerViewModel.setProcess(AuthProcessOf.NotStarted)
+            }
+        }
+        is AuthProcessOf.Loading -> {
+            LoadingDialog()
+        }
+        else -> {
+        
+        }
+    }
+    
     Scaffold(
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState){ snackBarData ->
@@ -106,7 +135,10 @@ fun RegisterPage(
             Column(modifier = Modifier
                 .fillMaxSize()
                 .weight(6f)
-                .padding(start = 25.dp, end = 25.dp),
+                .padding(
+                    start = 25.dp,
+                    end = 25.dp
+                ),
                 verticalArrangement = Arrangement.SpaceEvenly,
                 horizontalAlignment = Alignment.CenterHorizontally
             )
@@ -210,6 +242,9 @@ fun RegisterPage(
                                             scope.launch {
                                                 snackbarHostState.showSnackbar(message = errorMessage)
                                             }
+                                        }
+                                        else -> {
+                                        
                                         }
                                     }
                                 }

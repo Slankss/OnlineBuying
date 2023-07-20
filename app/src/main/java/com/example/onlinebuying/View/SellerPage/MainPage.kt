@@ -1,4 +1,4 @@
-package com.example.onlinebuying.View
+package com.example.onlinebuying.View.SellerPage
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Column

@@ -1,4 +1,4 @@
-package com.example.onlinebuying.View
+package com.example.onlinebuying.View.LoginPage
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -15,6 +15,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,7 +41,11 @@ import com.example.onlinebuying.Model.AuthProcessOf
 import com.example.onlinebuying.ViewModel.ProfilePageViewModel
 import com.example.onlinebuying.ViewModelFactory.ProfilePageViewModelFactory
 import com.example.onlinebuying.Widgets.CustomButton
+import com.example.onlinebuying.Widgets.FailedDialog
+import com.example.onlinebuying.Widgets.LoadingDialog
+import com.example.onlinebuying.Widgets.SuccessDialog
 import com.example.onlinebuying.ui.theme.Teal
+import com.google.rpc.context.AttributeContext.Auth
 import kotlinx.coroutines.launch
 
 
@@ -63,9 +68,11 @@ fun CreateProfilePage(
     var surname by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var is_seller by remember { mutableStateOf(false) }
+    var address by remember { mutableStateOf("") }
 
     var nameErrorState by remember { mutableStateOf(false) }
     var surnameErrorState by remember { mutableStateOf(false) }
+    var addressErrorState by remember { mutableStateOf(false) }
 
     var scope = rememberCoroutineScope()
     var snackbarHostState = remember { SnackbarHostState() }
@@ -73,9 +80,44 @@ fun CreateProfilePage(
 
     var profileViewModel : ProfilePageViewModel = viewModel(factory = ProfilePageViewModelFactory(firebaseRepository))
 
+    var process = profileViewModel.process.collectAsState()
+    
+    when(process.value){
+        is AuthProcessOf.Success -> {
+            val user = (process.value as AuthProcessOf.Success).user
+            SuccessDialog(text = "Hesap oluşturuldu") {
+                profileViewModel.setProcess(AuthProcessOf.NotStarted)
+                context.startActivity(
+                    Intent(
+                        context,
+                        when(user!!.seller_account)
+                        {
+                            true -> SellerActivity::class.java
+                            false -> CustomerActivity::class.java
+                        }
+                    )
+                )
+                context.finish()
+            }
+        }
+        is AuthProcessOf.Error -> {
+            val errorMessage = (process.value as AuthProcessOf.Error).errorMessage
+            FailedDialog(text = errorMessage) {
+                profileViewModel.setProcess(AuthProcessOf.NotStarted)
+            }
+        }
+        is AuthProcessOf.Loading -> {
+            LoadingDialog()
+        }
+        else -> {
+        
+        }
+    }
 
     Scaffold(
-
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        }
     )
     {
         Column(
@@ -134,11 +176,23 @@ fun CreateProfilePage(
                     phone = it
                 }
                 )
+            Input(
+                labelText = "Adresiniz (gerekli)",
+                inputText = address,
+                errorState = addressErrorState,
+                iconClick = { address = "" },
+                onValueChange = {
+                    address = it
+                }
+            )
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 35.dp, top = 20.dp),
+                    .padding(
+                        start = 35.dp,
+                        top = 20.dp
+                    ),
                 verticalAlignment = Alignment.CenterVertically
             ){
 
@@ -173,51 +227,28 @@ fun CreateProfilePage(
                 var nameStr = name.trim()
                 var surnameStr = surname.trim()
                 var phoneStr = phone.trim()
+                var address = address
 
                 nameErrorState = name.isBlank()
                 surnameErrorState = surname.isBlank()
 
-                if(!nameErrorState && !surnameErrorState){
+                if(!nameErrorState && !surnameErrorState && !addressErrorState){
                    profileViewModel.createProfile(
                        name = nameStr,
                        surname = surnameStr,
                        is_seller = is_seller,
-                       phone = phoneStr
-                   ){ process ->
-                       when(process){
-                           is AuthProcessOf.Success -> {
-                               var user = process.user
-
-                               if(user != null){
-                                   context.startActivity(Intent(
-                                       context,
-                                       when(user.seller_account){
-                                           true -> SellerActivity::class.java
-                                           false -> CustomerActivity::class.java
-                                       }
-                                   ))
-                                   context.finish()
-                               }
-
-                           }
-                           is AuthProcessOf.Error -> {
-                               val errorMessage = process.errorMessage
-                               scope.launch {
-                                   snackbarHostState.showSnackbar(message =  errorMessage)
-                               }
-                           }
-                       }
-                   }
+                       phone = phoneStr,
+                       address = address
+                   )
                 }
-
-
+                else{
+                    scope.launch {
+                        snackbarHostState.showSnackbar(message =  "Girdiğiniz bilgileri kontrol edin")
+                    }
+                }
             }
-
-
         }
-
     }
-
 
 }
 
@@ -232,13 +263,19 @@ fun Input(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 25.dp, vertical = 20.dp),
+            .padding(
+                horizontal = 25.dp,
+                vertical = 20.dp
+            ),
             horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             modifier = Modifier
                 .align(Alignment.Start)
-                .padding(bottom = 7.dp, start = 7.dp),
+                .padding(
+                    bottom = 7.dp,
+                    start = 7.dp
+                ),
             text = labelText,
             color = Color.Black,
             fontSize = 20.sp,

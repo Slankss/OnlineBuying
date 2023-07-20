@@ -36,6 +36,12 @@ class ProductDetailPageViewModel(
         }
     }
     
+    fun deleteProduct(id : Int,succes : () -> Unit){
+        firebaseRepository.deleteProduct(id){
+            succes()
+        }
+    }
+    
     fun setProcess(state : AddProcess){
         _process.value = state
     }

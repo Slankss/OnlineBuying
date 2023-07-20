@@ -1,7 +1,6 @@
-package com.example.onlinebuying.View
+package com.example.onlinebuying.View.SellerPage
 
 import android.annotation.SuppressLint
-import android.graphics.Paint.Style
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -47,15 +46,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.focus.FocusManager
-import androidx.compose.ui.focus.focusModifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.max
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.onlinebuying.Model.SellerPages
 import com.example.onlinebuying.ViewModel.AddProcess
 import com.example.onlinebuying.ViewModel.ProductDetailPageViewModel
 import com.example.onlinebuying.ViewModelFactory.ProductDetailPageViewModelFactory
@@ -73,9 +70,9 @@ import com.example.onlinebuying.ui.theme.Silver
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun ProductDetailPage(
-    navContreller : NavController,
-    firebaseRepository: FirebaseRepository,
-    product_id : Int?
+        navController : NavController,
+        firebaseRepository: FirebaseRepository,
+        product_id : Int?
 ){
     
     val scope = rememberCoroutineScope()
@@ -333,7 +330,18 @@ fun ProductDetailPage(
                         iconId = null
                     )
                     {
-                    
+                        if(isEdit){
+                            isEdit = !isEdit
+                        }
+                        else{
+                            productDetailViewModel.deleteProduct(product.value!!.id!!){
+                                navController.navigate(SellerPages.MyProductsPage.route) {
+                                    popUpTo(SellerPages.ProductDetailPage.route) {
+                                        inclusive = true
+                                    }
+                                }
+                            }
+                        }
                     }
     
     

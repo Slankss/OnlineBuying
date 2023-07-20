@@ -29,13 +29,11 @@ class MyProductsPageViewModel(
     fun getProductListFromFirebase(orderByField : Ordered,orderByDirection : Ordered){
 
         firebaseRepository.user?.let{
+            Log.e("icardii",it.email.toString())
             firebaseRepository.getProductList(it.email,orderByField, orderByDirection)
             { arrayList ->
                 if(arrayList != null){
                     _productProcess.value = ProductProcess.Success(arrayList)
-                    arrayList.forEach{
-                        Log.e("errorumsu",it.id.toString())
-                    }
                 }
                 else{
                     _productProcess.value = ProductProcess.Failed("Ürün Yok")

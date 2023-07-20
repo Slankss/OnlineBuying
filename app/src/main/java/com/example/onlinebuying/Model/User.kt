@@ -6,5 +6,6 @@ data class User(
     var name : String,
     var surname : String,
     var seller_account : Boolean,
-    var phone : String
+    var phone : String,
+    var address : String
 )

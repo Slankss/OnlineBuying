@@ -11,7 +11,7 @@ class LoginViewModel(
 
     var firebaseRepository: FirebaseRepository) : ViewModel()
 {
-    var _processOf = MutableStateFlow<AuthProcessOf<Int>?>(null)
+    var _processOf = MutableStateFlow<AuthProcessOf<Int>?>(AuthProcessOf.NotStarted)
     var processOf  = _processOf.asStateFlow()
 
     init
@@ -20,18 +20,21 @@ class LoginViewModel(
     }
 
     fun login(
-        email : String,password : String,
-        resultListener : (AuthProcessOf<Int>) -> Unit
+        email : String,password : String
     ){
-
+        setProcess(AuthProcessOf.Loading)
         firebaseRepository.login(
             email = email,
             password = password,
             resultListener = { process ->
-                resultListener(process)
+                setProcess(process)
             }
         )
 
+    }
+    
+    fun setProcess(process : AuthProcessOf<Int>){
+        _processOf.value = process
     }
 
 

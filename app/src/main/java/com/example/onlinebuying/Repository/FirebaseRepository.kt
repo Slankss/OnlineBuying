@@ -3,10 +3,17 @@ package com.example.onlinebuying.Repository
 import android.graphics.Bitmap
 import android.net.Uri
 import android.util.Log
+import androidx.compose.foundation.shape.ZeroCornerSize
+import androidx.compose.runtime.currentComposer
+import androidx.room.util.query
 import com.example.onlinebuying.Model.AuthProcessOf
+import com.example.onlinebuying.Model.Order
 import com.example.onlinebuying.Model.Ordered
 import com.example.onlinebuying.Model.Product
 import com.example.onlinebuying.Model.User
+import com.example.onlinebuying.ViewModel.AddProcess
+import com.example.onlinebuying.ViewModel.OrderProcess
+import com.example.onlinebuying.ViewModel.ProductProcess
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
@@ -15,6 +22,7 @@ import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
 import java.io.ByteArrayOutputStream
 import java.lang.reflect.Field
+import java.util.Date
 import java.util.concurrent.DelayQueue
 
 class FirebaseRepository() {
@@ -59,48 +67,55 @@ class FirebaseRepository() {
               resultListener: (AuthProcessOf<Int>) -> Unit,
         )
     {
-        auth.signInWithEmailAndPassword(email, password).addOnCompleteListener { task ->
-            if (task.isSuccessful)
-            {
+        var loginTask = auth.signInWithEmailAndPassword(email,password)
+    
+        loginTask.continueWith { task ->
+            if(task.isSuccessful){
+                user = auth.currentUser
                 getUserProfile(email){
                     resultListener(AuthProcessOf.Success(it))
                 }
             }
         }.addOnFailureListener { exception ->
-            exception.localizedMessage?.let {
-                resultListener(AuthProcessOf.Error(it))
-            }
-
+            resultListener(AuthProcessOf.Error(exception.localizedMessage))
         }
 
     }
 
     fun getUserProfile(email : String, getUser : (User?) -> Unit)  {
 
-        db.collection("User").whereEqualTo("email",email).limit(1).get().addOnCompleteListener{ task ->
-            if(task.isSuccessful) {
-                task.result?.documents.let{
-                    if(!it.isNullOrEmpty()){
-                        val name = it[0].getString("name") as String
-                        val surname = it[0].getString("surname") as String
-                        val is_seller = it[0].getBoolean("seller_account") as Boolean
-                        val user = User(email,name,surname,is_seller,"")
-
-                        getUser(user)
+        if(user != null) {
+            db.collection("User").whereEqualTo("email",email).limit(1).get().addOnCompleteListener{ task ->
+                if(task.isSuccessful) {
+                    task.result?.documents.let{
+                        if(!it.isNullOrEmpty()){
+                            val name = it[0].getString("name") as String
+                            val surname = it[0].getString("surname") as String
+                            val is_seller = it[0].getBoolean("seller_account") as Boolean
+                            var address = it[0].getString("address") as String
+                            val profile = User(email,name,surname,is_seller,"",address)
+                    
+                            getUser(profile)
+                        }
+                        else{
+                            getUser(null)
+                        }
+                
                     }
-                    else{
-                        getUser(null)
-                    }
-
                 }
             }
         }
+        else{
+            Log.e("icardi","user null")
+        }
+        
     }
 
-    fun createUserProfile(name : String,surname : String,is_seller : Boolean,phone : String, resultListener: (AuthProcessOf<Int>) -> Unit)
+    fun createUserProfile(name : String,surname : String,is_seller : Boolean,phone : String,
+                          address : String,resultListener: (AuthProcessOf<Int>) -> Unit)
     {
         user?.let{
-            var userProfile = User(it.email.toString(), name,surname,is_seller,phone)
+            var userProfile = User(it.email.toString(), name,surname,is_seller,phone,address)
 
             db.collection("User").add(userProfile).addOnCompleteListener{ task ->
                 if(task.isSuccessful){
@@ -231,13 +246,10 @@ class FirebaseRepository() {
 
     }
 
-    fun getProductList(seller_email : String?,orderByName : Ordered,
+    fun getProductList(email : String?,orderByName : Ordered,
                        orderByDirection : Ordered,
                        getProductList : (ArrayList<Product>?) -> Unit){
-
-
-        Log.e("arabam","firebase repo geldi")
-
+        
         db.collection("Product")
             .orderBy( when(orderByName)
             {
@@ -266,9 +278,13 @@ class FirebaseRepository() {
                         val image_url = doc.getString("image_url") as String
 
                         var product = Product(id, name,description,seller_email,price,stock,image_url)
-                        productList.add(product)
-
-                        Log.e("arabam",product.name)
+                        
+                        if(email == null){
+                            productList.add(product)
+                        }
+                        else if(email == seller_email){
+                            productList.add(product)
+                        }
                     }
                     getProductList(productList)
                 }
@@ -286,4 +302,151 @@ class FirebaseRepository() {
         }
 
     }
+    
+    fun deleteProduct(id : Int,resultListener : () -> Unit){
+        
+        db.collection("Product").whereEqualTo("id",id)
+            .get().addOnCompleteListener { getTask ->
+                if(getTask.isSuccessful){
+                    var document = getTask.result.documents
+                    var documentId = document[0].id
+                    db.collection("Product").document(documentId)
+                        .delete().addOnCompleteListener { task->
+                            if(task.isSuccessful){
+                                resultListener()
+                            }
+                        }
+                }
+            }
+        
+    }
+    
+    fun addOrder(order : Order,resultListener: (AddProcess) -> Unit){
+        
+        getLastOrderId { orderId ->
+            user?.let { curentUser ->
+                getUserProfile(curentUser.email!!){ profile ->
+                    if(profile != null){
+                        order.id = orderId
+                        order.buyer_email = profile.email
+                        order.buyer_name = profile.name
+                        order.buyer_surname = profile.surname
+                        order.buyer_address = profile.address
+    
+                        db.collection("Order").add(order)
+                            .addOnCompleteListener { task ->
+                                if(task.isSuccessful){
+                                    resultListener(AddProcess.Success)
+                                }
+                            }.addOnFailureListener { exception ->
+                                resultListener(AddProcess.Error)
+                            }
+                    }
+                }
+            }
+        }
+    }
+    
+    fun getLastOrderId(getLastId: (Int) -> Unit){
+        
+        db.collection("Order").limit(1).orderBy("id",Query.Direction.DESCENDING)
+            .get().addOnCompleteListener { task ->
+                if(task.isSuccessful){
+                    val document = task.result.documents
+                    if(document.isNotEmpty()){
+                        
+                        var id = document[0].getDouble("id")!!.toInt()
+                        getLastId(id+1)
+                    }
+                    else{
+                        getLastId(1)
+                    }
+                }
+            }
+        
+    }
+    
+    fun getOrderList(resultListener: (OrderProcess) -> Unit)
+    {
+        user?.let {
+            getUserProfile(it.email!!){ profile ->
+                if(profile != null){
+                    var email = profile.email
+                    var isSeller = profile.seller_account
+                    
+                    db.collection("Order")
+                        .orderBy("id",Query.Direction.DESCENDING)
+                        .get().addOnCompleteListener { task ->
+                        if(task.isSuccessful){
+                            var documents = task.result.documents
+                            if(documents.isNotEmpty()){
+                
+                                var orderList = arrayListOf<Order>()
+                                for(doc in documents){
+                                    var id = doc.getDouble("id")?.toInt() as Int
+                                    var product_id = doc.getDouble("product_id")?.toInt() as Int
+                                    var seller_email = doc.getString("seller_email") as String
+                                    var buyer_email = doc.getString("buyer_email") as String
+                                    var date = doc.getDate("date") as Date
+                                    var product_name = doc.getString("product_name") as String
+                                    var state = doc.getBoolean("state") as Boolean
+                                    var buyer_name = doc.getString("buyer_name") as String
+                                    var buyer_surname = doc.get("buyer_surname") as String
+                                    var buyer_address = doc.getString("buyer_address") as String
+    
+                                    var order = Order(id,product_id,product_name,seller_email,buyer_email,date,state,buyer_name,buyer_surname,buyer_address)
+                                    if(isSeller){
+                                        if(seller_email == email){
+                                            orderList.add(order)
+                                        }
+                                    }
+                                    else{
+                                        if(buyer_email == email){
+                                            orderList.add(order)
+                                        }
+                                    }
+                                }
+                                resultListener(OrderProcess.Success(orderList))
+                            }
+                            else{
+                                resultListener(OrderProcess.Failed("Sipariş bulunamadı"))
+                            }
+                        }
+                    }.addOnFailureListener { exception ->
+                        resultListener(OrderProcess.Failed("Sipariş bulunamadı"))
+                    }
+                }
+            }
+        }
+    }
+    
+    fun updateOrder(id : Int,state : Boolean,resultListener: () -> Unit){
+        
+        db.collection("Order").whereEqualTo("id",id)
+            .limit(1)
+            .get().addOnCompleteListener { getTask ->
+                if(getTask.isSuccessful){
+                    var document = getTask.result.documents
+                    var documentId = document[0].id
+                
+                    if(state){
+                        db.collection("Order").document(documentId)
+                            .update("state",true).addOnCompleteListener { task ->
+                                if(task.isSuccessful){
+                                    resultListener()
+                                }
+                            }
+                        }
+                    else{
+                        db.collection("Order").document(documentId).delete().addOnCompleteListener{ task ->
+                            if(task.isSuccessful){
+                                resultListener()
+                            }
+                        }
+                    }
+                }
+            }
+    }
+    
+    
 }

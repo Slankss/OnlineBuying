@@ -1,4 +1,4 @@
-package com.example.onlinebuying.View
+package com.example.onlinebuying.View.LoginPage
 
 import android.app.Activity
 import android.content.Context

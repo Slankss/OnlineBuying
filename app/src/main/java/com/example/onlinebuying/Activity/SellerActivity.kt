@@ -27,7 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -36,11 +36,11 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.onlinebuying.Model.SellerPages
 import com.example.onlinebuying.Repository.FirebaseRepository
-import com.example.onlinebuying.View.AddProductPage
-import com.example.onlinebuying.View.MyProductsPage
-import com.example.onlinebuying.View.OrdersPage
-import com.example.onlinebuying.View.ProductDetailPage
-import com.example.onlinebuying.View.ProfilePage
+import com.example.onlinebuying.View.SellerPage.AddProductPage
+import com.example.onlinebuying.View.SellerPage.MyProductsPage
+import com.example.onlinebuying.View.SellerPage.OrdersPage
+import com.example.onlinebuying.View.SellerPage.ProductDetailPage
+import com.example.onlinebuying.View.SellerPage.ProfilePage
 import com.example.onlinebuying.ui.theme.Orange
 import com.example.onlinebuying.ui.theme.Teal
 
@@ -73,7 +73,8 @@ fun SellerPage() {
     var items = listOf(
         SellerPages.MyProductsPage,
         SellerPages.AddProductPage,
-        SellerPages.OrdersPage
+        SellerPages.OrdersPage,
+        SellerPages.ProfilePage
     )
 
 
@@ -87,9 +88,9 @@ fun SellerPage() {
                     )
                     .defaultMinSize(minHeight = 75.dp)
                     .padding(
-                        start = 10.dp,
-                        end = 10.dp,
-                        bottom = 10.dp
+                        start = 5.dp,
+                        end = 5.dp,
+                        bottom = 5.dp
                     )
                     .clip(RoundedCornerShape(90.dp)),
                 backgroundColor = Teal
@@ -98,6 +99,7 @@ fun SellerPage() {
                 val currentRoute = navBackStackEntry?.destination?.route
 
                 items.forEach{ page ->
+                    
                     var isSelected = currentRoute == page.route
                     BottomNavigationItem(
                         modifier = Modifier
@@ -112,7 +114,8 @@ fun SellerPage() {
                                 color = when(isSelected){
                                     true -> Color.White
                                     false -> Color.Black
-                                }
+                                },
+                                fontSize = 14.sp
                             )
                             },
                         icon =
@@ -120,7 +123,7 @@ fun SellerPage() {
                             Icon(
                                 modifier = Modifier
                                     .padding(bottom = 7.dp)
-                                    .size(28.dp),
+                                    .size(24.dp),
                                 painter = painterResource(id = page.iconId!!),
                                 contentDescription = null,
                                 tint = when(isSelected){
@@ -177,7 +180,7 @@ fun SellerPage() {
             {
                 
                 ProductDetailPage(
-                    navContreller = navController,
+                    navController = navController,
                     firebaseRepository = firebaseRepository,
                     it.arguments?.getInt("product_id")
                 )

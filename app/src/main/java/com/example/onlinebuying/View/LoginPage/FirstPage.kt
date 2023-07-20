@@ -1,4 +1,4 @@
-package com.example.onlinebuying.View
+package com.example.onlinebuying.View.LoginPage
 
 import android.app.Activity
 import android.content.Intent
@@ -47,29 +47,29 @@ fun FirstPage(
     var scope = rememberCoroutineScope()
     val viewModel : FirstPageViewModel = viewModel(factory = FirstPageViewModelFactory(firebaseRepository,context))
 
-    var page = viewModel.page
-
-    LaunchedEffect(key1 = true, block = {
-        scope.launch {
-            page.collect{
-                it?.let{
-                    when(it){
-                        Pages.SellerPage.name -> {
-                            context.startActivity(Intent(context,SellerActivity::class.java))
-                            context.finish()
-                        }
-                        Pages.CustomerPage.name -> {
-                            context.startActivity(Intent(context,CustomerActivity::class.java))
-                            context.finish()
-                        }
-                        else -> navController.navigate(it)
-                    }
-
-                }
-            }
+    var page = viewModel.page.collectAsState()
+    
+    when(page.value){
+        Pages.SellerPage.name -> {
+            context.startActivity(Intent(context,SellerActivity::class.java))
+            context.finish()
+            viewModel.setPage(null)
         }
-    })
-
+        Pages.CustomerPage.name -> {
+            context.startActivity(Intent(context,CustomerActivity::class.java))
+            context.finish()
+            viewModel.setPage(null)
+        }
+        null -> {
+        
+        }
+        else -> {
+            viewModel.setPage(null)
+            navController.navigate(page.value!!)
+    
+        }
+    }
+    
     Row(
         modifier = Modifier
             .fillMaxSize()
@@ -89,7 +89,11 @@ fun FirstPage(
         LottieAnimation(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 50.dp, end = 50.dp, top = 100.dp),
+                .padding(
+                    start = 50.dp,
+                    end = 50.dp,
+                    top = 100.dp
+                ),
             composition = composition,
             iterations = LottieConstants.IterateForever,
         )

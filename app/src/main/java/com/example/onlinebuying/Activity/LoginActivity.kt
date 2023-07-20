@@ -14,12 +14,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.onlinebuying.Model.Pages
 import com.example.onlinebuying.Repository.FirebaseRepository
-import com.example.onlinebuying.View.CreateProfilePage
-import com.example.onlinebuying.View.FirstPage
-import com.example.onlinebuying.View.LoginPage
-import com.example.onlinebuying.View.ProfilePage
-import com.example.onlinebuying.View.RegisterPage
-import com.example.onlinebuying.View.TrailerPage
+import com.example.onlinebuying.View.LoginPage.CreateProfilePage
+import com.example.onlinebuying.View.LoginPage.FirstPage
+import com.example.onlinebuying.View.LoginPage.LoginPage
+import com.example.onlinebuying.View.LoginPage.RegisterPage
+import com.example.onlinebuying.View.LoginPage.TrailerPage
 import com.example.onlinebuying.ui.theme.OnlineBuyingTheme
 
 class LoginActivity : ComponentActivity() {

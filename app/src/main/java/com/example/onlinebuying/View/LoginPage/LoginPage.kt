@@ -1,8 +1,9 @@
-package com.example.onlinebuying.View
+package com.example.onlinebuying.View.LoginPage
 
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -24,7 +25,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import com.example.onlinebuying.R
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,11 +51,15 @@ import com.example.onlinebuying.ViewModel.LoginViewModel
 import com.example.onlinebuying.ViewModelFactory.LoginViewModelFactory
 import com.example.onlinebuying.Widgets.CustomButton
 import com.example.onlinebuying.Widgets.CustomSnackkBar
+import com.example.onlinebuying.Widgets.FailedDialog
+import com.example.onlinebuying.Widgets.LoadingDialog
 import com.example.onlinebuying.Widgets.PasswordOutlinedTextField
+import com.example.onlinebuying.Widgets.SuccessDialog
 import com.example.onlinebuying.Widgets.UsernameOutlinedTextField
 import com.example.onlinebuying.ui.theme.Orange
 import com.example.onlinebuying.ui.theme.Red
 import com.example.onlinebuying.ui.theme.Teal
+import com.google.rpc.context.AttributeContext.Auth
 import kotlinx.coroutines.launch
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -81,6 +86,44 @@ fun LoginPage(
     var passwordVisibility by remember { mutableStateOf(false) }
 
     val loginViewModel : LoginViewModel = viewModel(factory = LoginViewModelFactory(firebaseRepository))
+    
+    var process = loginViewModel.processOf.collectAsState()
+    
+    when(process.value){
+        is AuthProcessOf.Success ->{
+            Log.e("icardi","SUCCESS")
+            var user = (process.value as AuthProcessOf.Success).user
+            SuccessDialog(text = "Giriş yapıldı") {
+                loginViewModel.setProcess(AuthProcessOf.NotStarted)
+                if(user != null){
+                    context.startActivity(
+                        Intent(
+                            context,
+                            when(user.seller_account){
+                                true -> SellerActivity::class.java
+                                false -> CustomerActivity::class.java
+                            })
+                    )
+                    context.finish()
+                }
+                else{
+                    navController.navigate(Pages.CreateProfilePage.name)
+                }
+            }
+        }
+        is AuthProcessOf.Error -> {
+            var errorMessage = (process.value as AuthProcessOf.Error).errorMessage
+            FailedDialog(text = errorMessage ){
+                loginViewModel.setProcess(AuthProcessOf.NotStarted)
+            }
+        }
+        is AuthProcessOf.Loading ->{
+            LoadingDialog()
+        }
+        else -> {
+        
+        }
+    }
 
     BackHandler {
         context.finish()
@@ -147,7 +190,10 @@ fun LoginPage(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(start = 25.dp, end = 25.dp),
+                        .padding(
+                            start = 25.dp,
+                            end = 25.dp
+                        ),
                     verticalArrangement = Arrangement.SpaceEvenly,
                     horizontalAlignment = Alignment.CenterHorizontally
                 )
@@ -209,36 +255,7 @@ fun LoginPage(
                                 loginViewModel.login(
                                     email = emailStr,
                                     password = passwordStr
-                                ){ process ->
-                                    when(process){
-                                        is AuthProcessOf.Success ->
-                                        {
-                                            if(process.user != null){
-                                                context.startActivity(
-                                                    Intent(
-                                                        context,
-                                                        when(process.user.seller_account){
-                                                            true -> SellerActivity::class.java
-                                                            false -> CustomerActivity::class.java
-                                                        })
-
-                                                )
-                                                context.finish()
-                                            }
-                                            else{
-                                                navController.navigate(Pages.CreateProfilePage.name)
-                                            }
-                                        }
-                                        is AuthProcessOf.Error -> {
-                                            var errorMessage =process.errorMessage
-                                            scope.launch {
-                                                snackbarHostState.showSnackbar(message = errorMessage)
-                                            }
-                                            loginViewModel._processOf.value = null
-
-                                        }
-                                    }
-                                }
+                                )
                             }
                             else{
                                 scope.launch {
