@@ -4,6 +4,7 @@ import android.icu.util.TimeZone
 import android.os.Build
 import androidx.annotation.RequiresApi
 import kotlinx.coroutines.selects.selectUnbiased
+import java.lang.Exception
 import java.sql.Time
 import java.text.SimpleDateFormat
 import java.time.LocalTime
@@ -11,6 +12,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.PrimitiveIterator
 import java.util.SimpleTimeZone
+import kotlin.math.pow
 import kotlin.math.sqrt
 
 
@@ -29,13 +31,8 @@ fun main(){
     //println("test 3 = "+(3 == lengthOfLongestSubstring(c3)))
     //println("test 4 = "+(3 == lengthOfLongestSubstring(c4)))
     //println("test 5 = "+(1 == lengthOfLongestSubstring(c5)))
-    println(    lengthOfLongestSubstring("c"))
     
-    var array1 = intArrayOf(3,4,7,8)
-    var array2 = intArrayOf(1,2,5)
-    
-    println(findMedianSortedArrays(array1,array2))
-
+   println(isMatch("aa","a*"))
     
 }
 
@@ -77,39 +74,131 @@ fun lengthOfLongestSubstring(s: String): Int {
 
 fun findMedianSortedArrays(nums1: IntArray, nums2: IntArray): Double {
     
-    var medians = intArrayOf()
-    var merged_array = nums1.toMutableList()
+    var median = 0.0
+    var merged_array = intArrayOf()
     
-    merged_array.addAll(nums2.toMutableList())
-    if(nums1.isNotEmpty() && nums2.isNotEmpty()){
-        if(nums1[nums1.lastIndex] > nums2[0]){
-            for(i in merged_array.indices){
-                for(j in i+1 until merged_array.size){
-                    if(merged_array [i] > merged_array[j]){
-                        var tmp = merged_array[i]
-                        merged_array[i] = merged_array[j]
-                        merged_array[j] = tmp
+    if(nums1.isEmpty() && nums2.isEmpty())
+        return 0.0
+    else if(nums1.isEmpty() && nums2.isNotEmpty()){
+        for(i in nums2){
+            merged_array += i
+        }
+    }
+    else if(nums1.isNotEmpty() && nums2.isEmpty()){
+        for(i in nums1){
+            merged_array += i
+        }
+    }
+    else{
+        var n1_index = 0
+        var n2_index = 0
+        
+        if(nums1[nums1.lastIndex] < nums2[0]){
+            merged_array = nums1
+            for(i in nums2){
+                merged_array +=i
+            }
+        }
+        else if(nums2[nums2.lastIndex] < nums1[0]){
+            merged_array = nums2
+            for(i in nums1){
+                merged_array += i
+            }
+        }
+        else{
+            while(n1_index < nums1.size || n2_index < nums2.size){
+                var n1 = 0
+                var n2 = 0
+                if(n1_index < nums1.size && n2_index < nums2.size){
+                    n1 = nums1[n1_index]
+                    n2 = nums2[n2_index]
+                    if(n1 < n2){
+                        merged_array += n1
+                        n1_index++
+                        continue
                     }
+                    else if(n2 < n1){
+                        merged_array += n2
+                        n2_index++
+                        continue
+                    }
+                    else{
+                        merged_array += n1
+                        merged_array += n2
+                        n1_index++
+                        n2_index++
+                        continue
+                    }
+                }
+                
+                else if(n1_index < nums1.size && n2_index >= nums2.size){
+                    n1 = nums1[n1_index]
+                    merged_array += n1
+                    n1_index++
+                    continue
+                }
+                else if(n2_index < nums2.size && n1_index >= nums1.size){
+                    n2 = nums2[n2_index]
+                    merged_array += n2
+                    n2_index++
+                    continue
                 }
             }
         }
     }
-    
-    
     var index = merged_array.size.toDouble() / 2
     if(merged_array.size % 2 == 0){
-        medians += merged_array[ (index-1).toInt() ]
-        medians += merged_array[index.toInt()]
+        median = ( (merged_array[ (index-1).toInt()] + merged_array[index.toInt()]).toDouble() ) / 2
     }
     else{
         index -=0.5
-        medians += merged_array[index.toInt()]
+        median = (merged_array[index.toInt()]).toDouble()
+    }
+    return median
+}
+
+fun reverse(x: Int): Int {
+    println(x::class.java.typeName)
+    if(x > 2.0.pow(31))
+        return 0
+    var str = x.toString()
+    var newStr = ""
+    var is_negative = false
+    var index = str.lastIndex
+    while(index >= 0){
+        if(str[index] == '-')
+            is_negative = true
+        else
+            newStr += str[index]
+        
+        index--
+    }
+    return try
+    {
+        if(is_negative) newStr.toInt() * (-1) else newStr.toInt()
+    }catch(e : Exception){
+        0
+    }
+}
+
+fun isPalindrome(x: Int): Boolean {
+    
+    var number_str = x.toString()
+    var new_number_str = ""
+    for(i in number_str.count() -1 downTo 0){
+        new_number_str += i
     }
     
-    if(medians.size > 1){
-        return ( (medians[0].toDouble() + medians[1].toDouble()) / 2 ).toDouble()
+    return number_str == new_number_str
+}
+fun isMatch(s: String, p: String): Boolean {
+    
+    if(p.contains(s)){
+        return true
     }
-    return medians[0].toDouble()
+    else
+        return p.contains("*")
+    
 }
 
 
