@@ -179,6 +179,7 @@ fun reverse(x: Int): Int {
     }catch(e : Exception){
         0
     }
+    
 }
 
 fun isPalindrome(x: Int): Boolean {
