@@ -16,3 +16,5 @@ var Red = Color(0xFFEF6262)
 var Orange = Color(0xFFF3AA60)
 
 var Silver = Color(0xFF9DB2BF)
+
+val SpecialGreen = Color(0xFF27B8BE)

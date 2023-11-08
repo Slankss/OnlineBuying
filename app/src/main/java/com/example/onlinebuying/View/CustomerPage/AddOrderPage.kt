@@ -7,20 +7,25 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -36,8 +41,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.DefaultShadowColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
@@ -65,6 +73,7 @@ import com.example.onlinebuying.ui.theme.Navy
 import com.example.onlinebuying.ui.theme.Orange
 import com.example.onlinebuying.ui.theme.Red
 import com.example.onlinebuying.ui.theme.Silver
+import com.example.onlinebuying.ui.theme.SpecialGreen
 import java.sql.Timestamp
 import java.time.Instant
 
@@ -157,14 +166,14 @@ fun AddOrderPage(
     
     ) {
         
-        Column(
+        Box(
             modifier = Modifier
                 .background(
                     color = Color.White
                 )
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .verticalScroll(rememberScrollState())
+
         ) {
             
             var painter = rememberAsyncImagePainter(
@@ -175,92 +184,155 @@ fun AddOrderPage(
                         placeholder(R.drawable.place_holder)
                     }.build()
             )
-            
+
+            var image_size by remember { mutableStateOf(150.dp) }
             var image_scale by remember { mutableStateOf(1f) }
             var image_vertical_padding by remember { mutableStateOf(20.0) }
-            
+
+
+
             Card(
                 modifier = Modifier
-                    .padding(vertical = image_vertical_padding.dp)
-                    .scale(image_scale)
+                    .fillMaxWidth()
+                    .padding(40.dp)
+                    .shadow(
+                        elevation = 15.dp,
+                        ambientColor = DefaultShadowColor,
+                        spotColor = DefaultShadowColor
+                    )
+                    .align(Alignment.Center)
                     .combinedClickable(
                         onClick = {
-            
+
                         },
                         onDoubleClick = {
-                            when(image_scale)
+                            when (image_scale)
                             {
                                 1f ->
                                 {
                                     image_scale *= 1.25f
+                                    image_size = 300.dp
                                     image_vertical_padding *= 2
                                 }
-                
+
                                 else ->
                                 {
+                                    image_size = 150.dp
                                     image_scale /= 1.25f
                                     image_vertical_padding /= 2
                                 }
                             }
                         }
                     ),
-                shape = RoundedCornerShape(24.dp),
-                border = BorderStroke(width = 1.dp,color = Color.Black)
-            ) {
-                Image(
-                    modifier = Modifier
-                        .size(width = 225.dp, height = 250.dp),
-                    painter = painter,
-                    contentScale = ContentScale.Crop,
-                    contentDescription = "product.name",
-                    
-                    )
-            }
-            
-            
-            Card(
-                modifier = Modifier
-                    .padding(10.dp)
-                    .fillMaxSize(),
+
                 colors = CardDefaults.cardColors(
-                    containerColor = Orange,
+                    containerColor = Color.White
                 ),
-                border = BorderStroke(color = Color.Black, width = 1.dp),
-                elevation = CardDefaults.cardElevation(
-                    defaultElevation = 7.dp
-                )
-            )
-            {
-                
-                ProductInfoColumn(
-                    title = "Ürün adı",
-                    text = if(product.value != null) product.value!!.name else ""
-                )
-                
-                ProductInfoColumn(
-                    title = "Ürün açıklaması",
-                    text =  if(product.value != null) product.value!!.descripton else ""
-                )
-                
-                ProductInfoColumn(
-                    title = "Ürün Fiyatı",
-                    text = if(product.value != null) product.value!!.price.toString() else ""
-                )
-                
-                
-                CustomButton(
+                shape = RoundedCornerShape(15.dp),
+            ) {
+                Column(
                     modifier = Modifier
-                        .padding(50.dp),
-                    shape = RoundedCornerShape(7.dp),
-                    text = "Sipariş ver",
-                    fontSize = 16,
-                    textColor = Color.White,
-                    containerColor = Navy,
-                    iconId = null
-                ){
-                    alertDialogVisibility = true
+                        .fillMaxWidth()
+                        .padding(15.dp)
+                )
+                {
+
+                    Image(
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .clip(CircleShape)
+                            .border(
+                                width = 2.dp,
+                                color = SpecialGreen,
+                                shape = CircleShape
+                            )
+                            .shadow(
+                                elevation = 10.dp,
+                                ambientColor = DefaultShadowColor,
+                                spotColor = DefaultShadowColor
+                            )
+                            .size(image_size),
+                        painter = painter,
+                        contentScale = ContentScale.Crop,
+                        contentDescription = "product.name",
+
+                        )
+
+                    Text(
+                        text = if(product.value != null) product.value!!.id.toString() else "",
+                        modifier = Modifier
+                            .padding(top = 5.dp),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Row(
+                        modifier = Modifier
+                            .padding( top = 5.dp)
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceAround
+                    ){
+                        Text(
+                            modifier = Modifier
+                                .weight(6f),
+                            text = product.value?.name ?: "",
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                color = Color.Black,
+                                textAlign = TextAlign.Start
+                            )
+                        )
+                        Text(
+                            modifier = Modifier
+                                .weight(4f),
+                            text =
+                            if(product.value != null)
+                                "₺"+product.value!!.price.toString()
+                                else "",
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                color = SpecialGreen,
+                                textAlign = TextAlign.End
+                            )
+                        )
+                    }
+
+                    Text(
+                        modifier = Modifier
+                            .padding(top = 20.dp),
+                        text = "Ürün Açıklaması",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = Color.Black
+                        )
+                    )
+
+                    Text(
+                        modifier = Modifier
+                            .padding(top = 10.dp)
+                            .fillMaxWidth(),
+                        text = product.value?.descripton ?: "",
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            color = Color.Black
+                        )
+                    )
+
+
+                    CustomButton(
+                        modifier = Modifier
+                            .padding( top = 20.dp)
+                            .align(Alignment.CenterHorizontally),
+                        shape = RoundedCornerShape(7.dp),
+                        text = "Sipariş ver",
+                        fontSize = 14,
+                        textColor = Color.White,
+                        containerColor = Navy,
+                        iconId = null
+                    ){
+                        alertDialogVisibility = true
+                    }
                 }
             }
+            
+            
+
         }
     }
     
@@ -278,14 +350,13 @@ fun ProductInfoColumn(
             .padding(
                 horizontal = 10.dp,
                 vertical = 10.dp
-            )
-            .fillMaxWidth(),
+            ),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium.copy(
-                fontSize = 24.sp
+                fontSize = 18.sp
             )
         )
         Text(
@@ -293,8 +364,8 @@ fun ProductInfoColumn(
                 .padding(horizontal = 15.dp, vertical = 5.dp),
             text = text,
             style = MaterialTheme.typography.bodyMedium.copy(
-                fontSize = 22.sp,
-                color = Color.White
+                fontSize = 16.sp,
+                color = Color.Black
             ),
             textAlign = TextAlign.Justify
         )

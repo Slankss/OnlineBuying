@@ -71,8 +71,7 @@ fun CustomButton(modifier : Modifier,
         )
     ){
         Row(
-            modifier = Modifier
-                .fillMaxWidth(),
+            modifier = Modifier,
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         )

@@ -9,62 +9,43 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.onlinebuying.R
 
-var Roboto = FontFamily(
-    Font(R.font.roboto_light,FontWeight.Normal),
-    Font(R.font.roboto_light,FontWeight.Normal,FontStyle.Italic),
-    Font(R.font.roboto_black,FontWeight.Black),
-    Font(R.font.roboto_black,FontWeight.Black,FontStyle.Italic),
-    Font(R.font.roboto_medium,FontWeight.Medium),
-    Font(R.font.roboto_medium_italic,FontWeight.Medium,FontStyle.Italic),
-    Font(R.font.roboto_thin, FontWeight.Thin),
-    Font(R.font.roboto_thin_italic, FontWeight.Thin, FontStyle.Italic),
-    Font(R.font.roboto_bold, FontWeight.Bold),
-    Font(R.font.roboto_bold_italic, FontWeight.Bold, FontStyle.Italic),
+var Inter = FontFamily(
+    Font(R.font.inter_regular,FontWeight.W400),
+    Font(R.font.inter_medium,FontWeight.W500),
+    Font(R.font.inter_semibold,FontWeight.W600),
+    Font(R.font.inter_bold, FontWeight.W700)
     )
 
 // Set of Material typography styles to start with
 val Typography = Typography(
-    bodyLarge = TextStyle(
-        fontFamily = Roboto,
-        fontWeight = FontWeight.Normal,
-        fontSize = 16.sp,
+
+    bodyMedium = TextStyle(
+        fontFamily = Inter,
+        fontWeight = FontWeight.W500,
+        fontSize = 14.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.5.sp
     ),
     titleMedium = TextStyle(
-        fontFamily = Roboto,
-        fontWeight = FontWeight.Medium,
-        fontSize = 18.sp,
+        fontFamily = Inter,
+        fontWeight = FontWeight.W600,
+        fontSize = 15.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.5.sp
     ),
     headlineMedium = TextStyle(
-        fontFamily = Roboto,
-        fontWeight = FontWeight.Bold,
-        fontSize = 24.sp,
+        fontFamily = Inter,
+        fontWeight = FontWeight.W700,
+        fontSize = 16.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.5.sp
     ),
     labelMedium = TextStyle(
-        fontFamily = Roboto,
-        fontWeight = FontWeight.Thin,
-        fontSize = 16.sp,
+        fontFamily = Inter,
+        fontWeight = FontWeight.W400,
+        fontSize = 12.sp,
         lineHeight = 24.sp,
-    )
-    /* Other default text styles to override
-    titleLarge = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
-        fontSize = 22.sp,
-        lineHeight = 28.sp,
-        letterSpacing = 0.sp
-    ),
-    labelSmall = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Medium,
-        fontSize = 11.sp,
-        lineHeight = 16.sp,
         letterSpacing = 0.5.sp
     )
-    */
+
 )

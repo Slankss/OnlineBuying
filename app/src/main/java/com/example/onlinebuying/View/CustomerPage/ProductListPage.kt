@@ -147,8 +147,9 @@ fun ProductItem(product: Product, navController: NavController){
             .border(
                 BorderStroke(
                     width = 2.dp,
-                    color = if(product.id!! % 2 == 0) Orange else Teal
-                )
+                    color = if(product.id!! % 2 == 0) Orange else Teal,
+                ),
+                shape = RoundedCornerShape(24.dp)
             )
     ) {
         var painter = rememberAsyncImagePainter(
